@@ -1,20 +1,17 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
 import Data.List
-import Data.Ord
 import qualified Data.Map as M
 import Data.Char
-import Debug.Trace
 type File = (String,Int)
 data Elem = Folder (String, Int, [Elem]) | File File deriving Show
 
 main :: IO ()
-main = interact $ show .  calculate . toTree (Folder ("root", 0, [])) . addPaths [] . lines
--- sort . folderSizes [] .
---  . calFolders . calculate . toTree (Folder ("root", 0, []))
---  toTree (Folder ("/",[]))
--- sum . filter (<100000) . map (snd)
---main = interact $ show . addPaths [] . lines
+main = interact $ show . deleteOptimal 70000000 30000000 . sort . folderSizes [] .  calculate . toTree (Folder ("root", 0, [])) . addPaths [] . lines
+
+deleteOptimal :: Int -> Int -> [Int] -> Int
+deleteOptimal diskSize neededSpace folders = head $ dropWhile (<optimalSize) folders
+    where optimalSize = neededSpace - (diskSize - last folders)
 
 folderSizes ::[Int] -> Elem -> [Int]
 folderSizes a (File _) = []
@@ -63,14 +60,3 @@ addPaths prefix (s:ss) | isPrefixOf "dir" s = addPaths prefix ss
 addPaths prefix (s:ss) | isPrefixOf "$ cd .." s = addPaths (init prefix) ss
 addPaths prefix (s:ss) | isPrefixOf "$ cd " s = addPaths (prefix ++ [drop 5 s]) ss
 addPaths prefix (s:ss) = (prefix,s):addPaths prefix ss
-
-countFirstLevel :: M.Map String Int -> [String] -> M.Map String Int
-countFirstLevel m [    ] = m
-countFirstLevel m (s:ss) =
-    let (path,file) = span (/='#') s
-        size = read $ takeWhile isDigit $ tail file
-        prev = case M.lookup path m of
-            Nothing -> 0
-            Just a -> a
-    --in trace path $ countFirstLevel (M.insert path (prev) m) ss
-    in trace path $ countFirstLevel (M.mapWithKey (\k -> \a -> if isPrefixOf k path then a + size else a) (M.insert path (prev) m)) ss

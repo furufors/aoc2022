@@ -1,7 +1,6 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
 import Data.List
-import Data.Ord
 import qualified Data.Map as M
 import Data.Char
 import Debug.Trace
@@ -58,14 +57,3 @@ addPaths prefix (s:ss) | isPrefixOf "dir" s = addPaths prefix ss
 addPaths prefix (s:ss) | isPrefixOf "$ cd .." s = addPaths (init prefix) ss
 addPaths prefix (s:ss) | isPrefixOf "$ cd " s = addPaths (prefix ++ [drop 5 s]) ss
 addPaths prefix (s:ss) = (prefix,s):addPaths prefix ss
-
-countFirstLevel :: M.Map String Int -> [String] -> M.Map String Int
-countFirstLevel m [    ] = m
-countFirstLevel m (s:ss) =
-    let (path,file) = span (/='#') s
-        size = read $ takeWhile isDigit $ tail file
-        prev = case M.lookup path m of
-            Nothing -> 0
-            Just a -> a
-    --in trace path $ countFirstLevel (M.insert path (prev) m) ss
-    in trace path $ countFirstLevel (M.mapWithKey (\k -> \a -> if isPrefixOf k path then a + size else a) (M.insert path (prev) m)) ss
