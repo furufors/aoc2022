@@ -19,17 +19,7 @@ follow _       _       ps [    ] = reverse ps
 follow h t ps (i:is) = let h' = step h i; t' = follow' h' t in follow h' t' (t':ps) is
 
 follow'  :: Pos -> Pos -> Pos
-follow' (hx, hy) (tx, ty) = let dx = hx - tx; dy = hy - ty in move (dx,dy)
-    where
-        move ( 0, 2) = (tx, ty+1)
-        move ( 0,-2) = (tx, ty-1)
-        move ( 2, 0) = (tx+1, ty)
-        move (-2, 0) = (tx-1, ty)
-        move d | d `elem` [( 1, 2),( 2, 1),( 2, 2)] = (tx+1, ty+1)
-        move d | d `elem` [(-1, 2),(-2, 1),(-2, 2)] = (tx-1, ty+1)
-        move d | d `elem` [(-1,-2),(-2,-1),(-2,-2)] = (tx-1, ty-1)
-        move d | d `elem` [( 1,-2),( 2,-1),( 2,-2)] = (tx+1, ty-1)
-        move (dx,dy) = (tx,ty)
+follow' (hx, hy) (tx, ty) = let dx = hx - tx; dy = hy - ty in if dx*dx+dy*dy > 2 then (tx + signum dx, ty + signum dy) else (tx,ty)
 
 followPos :: Pos -> [Pos] -> [Pos] -> [Pos]
 followPos _       ps [          ] = reverse ps
@@ -37,15 +27,4 @@ followPos _       ps [_         ] = reverse ps
 followPos t ps (_:h:hs) = let t' = follow' h t in followPos t' (t':ps) (h:hs)
 
 step :: Pos -> Instruction -> Pos
-step (x,y) R = (x+1,y)
-step (x,y) U = (x,y+1)
-step (x,y) D = (x,y-1)
-step (x,y) L = (x-1,y)
-
-{-  toString :: [Pos] -> String
-    toString pos =
-        let minx = minimum $ map fst pos ++ [0]
-            maxx = maximum $ map fst pos ++ [0]
-            miny = minimum $ map snd pos ++ [0]
-            maxy = maximum $ map snd pos ++ [0]
-        in intercalate "\n" [[if (x,y) == (0,0) then 's' else if b then '#' else '.' | x <- [minx..maxx], let b = (x,y) `elem` pos]| y <- reverse [miny..maxy]] -}
+step (x,y) = \case { R -> (x+1,y); U -> (x,y+1); D -> (x,y-1); L -> (x-1,y) }
