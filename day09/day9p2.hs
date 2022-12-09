@@ -15,15 +15,15 @@ parseInst :: Char -> Instruction
 parseInst = \case { 'R' -> R; 'U' -> U; 'D' -> D; 'L' -> L; x -> error ("Unkown input " ++ [x]) }
 
 follow :: Pos -> Pos -> [Pos] -> [Instruction] -> [Pos]
-follow _       _       ps [    ] = reverse ps
+follow _ _ ps [    ] = reverse ps
 follow h t ps (i:is) = let h' = step h i; t' = follow' h' t in follow h' t' (t':ps) is
 
 follow'  :: Pos -> Pos -> Pos
 follow' (hx, hy) (tx, ty) = let dx = hx - tx; dy = hy - ty in if dx*dx+dy*dy > 2 then (tx + signum dx, ty + signum dy) else (tx,ty)
 
 followPos :: Pos -> [Pos] -> [Pos] -> [Pos]
-followPos _       ps [          ] = reverse ps
-followPos _       ps [_         ] = reverse ps
+followPos _ ps [      ] = reverse ps
+followPos _ ps [_     ] = reverse ps
 followPos t ps (_:h:hs) = let t' = follow' h t in followPos t' (t':ps) (h:hs)
 
 step :: Pos -> Instruction -> Pos
