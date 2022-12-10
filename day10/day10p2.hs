@@ -8,7 +8,7 @@ main :: IO ()
 main = interact $ intercalate "\n" . toScreen . execute [] . map parse . lines
 
 toScreen :: [Int] -> [String]
-toScreen is = chunksOf 40 . map visible $ zip is [1..]
+toScreen is = chunksOf 40 . map visible . init $ (0,1):zip is [1..]
 
 visible (p,i) = if p - (i `mod` 40) `elem` [-1,0,1] then '#' else '.'
 
