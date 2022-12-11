@@ -10,10 +10,7 @@ data Monkey = Monkey { ident :: Int
                      , inspections :: Int}
 
 main :: IO ()
-main = putStrLn . show . score . map inspections . (!!20) $ iterate turns ma
-
-score :: [Int] -> Int
-score is = (\(a:b:_) -> a * b) . reverse . sort $ is
+main = putStrLn . show . (\(a:b:_) -> a * b) . reverse . sort . map inspections . (!!20) $ iterate turns ma
 
 turns :: [Monkey] -> [Monkey]
 turns ms = foldl turn ms [0..(length ms - 1)]
@@ -22,7 +19,7 @@ turn :: [Monkey] -> Int -> [Monkey]
 turn ms i = let monkey = ms !! i
                 changes = [(if (test monkey) worry then ifTrue monkey else ifFalse monkey, worry) | item <- items monkey, let worry = ((operation monkey) item) `div` 3]
                 numInspections = length changes
-            in applyChanges changes . emptyList i . updateNumInsp i numInspections $ ms
+            in applyChanges changes . applyAt i ((\x -> x {items = []}).(\x -> x {inspections = inspections x + numInspections})) $ ms
 
 applyChanges :: [(Int,Int)] -> [Monkey] -> [Monkey]
 applyChanges [] ms = ms
@@ -31,15 +28,8 @@ applyChanges ((i,worry):rest) ms =
         ms' = take i ms ++ (updated:drop (i+1) ms)
     in applyChanges rest ms'
 
-emptyList :: Int -> [Monkey] -> [Monkey]
-emptyList i ms =
-    let emptied = (\x -> x { items = [] }) $ (ms !! i)
-    in (take i ms) ++ [emptied] ++ (drop (i+1) ms)
-
-updateNumInsp :: Int -> Int -> [Monkey] -> [Monkey]
-updateNumInsp i n ms =
-    let updated = (\x -> x { inspections = inspections x + n }) $ (ms !! i)
-    in (take i ms) ++ [updated] ++ (drop (i+1) ms)
+applyAt :: Int -> (Monkey -> Monkey) -> [Monkey] -> [Monkey]
+applyAt i fun ms = (take i ms) ++ [fun (ms !! i)] ++ (drop (i+1) ms)
 
 ma :: [] Monkey
 ma = [ Monkey {ident = 0, items = [98,89,52], operation = (\x -> x * 2), test = (\x -> x `mod` 5 == 0), ifTrue = 6, ifFalse = 1, inspections = 0}
