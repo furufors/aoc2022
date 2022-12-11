@@ -21,25 +21,16 @@ turns ms = foldl turn ms [0..(length ms - 1)]
 
 turn :: [Monkey] -> Int -> [Monkey]
 turn ms i = let monkey = ms !! i
-                shouldInactivate = items monkey == []
                 changes = [(if (test monkey) worry then ifTrue monkey else ifFalse monkey, worry) | item <- items monkey, let worry = ((operation monkey) item) `div` 3]
                 numInspections = length changes
             in applyChanges changes . emptyList i . updateNumInsp i numInspections $ ms
-           {-  in if active monkey
-               then applyChanges changes . emptyList i . updateNumInsp i numInspections $ if shouldInactivate then inactivate i ms else ms
-               else ms
- -}
+
 applyChanges :: [(Int,Int)] -> [Monkey] -> [Monkey]
 applyChanges [] ms = ms
 applyChanges ((i,worry):rest) ms =
     let updated = (\x -> x { items = items x ++ [worry]}) (ms !! i)
         ms' = take i ms ++ (updated:drop (i+1) ms)
     in applyChanges rest ms'
-
-inactivate :: Int -> [Monkey] -> [Monkey]
-inactivate i ms =
-    let inactivated = (\x -> x { active = False } ) (ms !! i)
-    in (take i ms) ++ [inactivated] ++ (drop (i+1) ms)
 
 emptyList :: Int -> [Monkey] -> [Monkey]
 emptyList i ms =
