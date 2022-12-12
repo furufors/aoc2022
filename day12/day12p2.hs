@@ -3,10 +3,11 @@
 import Data.Char
 import Algorithm.Search
 import Data.Maybe
+import Control.Parallel.Strategies
 type State = (Int,Int)
 
 main :: IO ()
-main = interact $ show . fromJust . solve . map (map $ (\x -> x-97) . ord) . lines
+main = interact $ show . fromJust . solve . parMap rpar (map $ (\x -> x-97) . ord) . lines
 
 solve :: [[Int]] -> Maybe (Int, [State])
 solve key = dijkstra next cost solved start
