@@ -12,7 +12,7 @@ exclusionsY :: Int -> [Data] -> [Bool]
 exclusionsY y ds =
     let maxx = offset + (maximum $ map (\(Data ((a,b),(c,d))) -> max a c) ds)
         minx = -offset + (minimum $ map (\(Data ((a,b),(c,d))) -> min a c) ds)
-    in [ any id [manhattan (x,y) (a,b) <= manhattan (a,b) (c,d) && (x,y) /= (c,d)| (Data ((a,b),(c,d))) <- ds] | x <- [minx..maxx]]
+    in [any id [x < a + dx && x > a - dx && (x,y) /= (c,d) | (Data ((a,b),(c,d))) <- ds, let m = manhattan (a,b) (c,d), let dx = max 0 (1+m-(abs (y-b))) ] | x <- [minx..maxx]]
 
 manhattan :: Pos -> Pos -> Int
 manhattan (a,b) (c,d) = abs (a-c) + abs (b-d)
