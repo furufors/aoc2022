@@ -21,19 +21,16 @@ parsein :: String -> Data
 parsein input = case parse (try sensorData) "parsein" input of
     Left err -> error $ show err
     Right a -> a
-
-sensorData :: Parsec String () Data
-sensorData = do
-    _ <- string "Sensor at x="
-    a <- parseInt
-    _ <- string ", y="
-    b <- parseInt
-    _ <- string ": closest beacon is at x="
-    c <- parseInt
-    _ <- string ", y="
-    d <- parseInt
-    return $ Data ((a,b),(c,d))
-
-parseInt = parseIntN <|> parseIntP
-parseIntN = string "-" >> parseInt >>= (\s -> return $ (-1) * s)
-parseIntP =  read <$> many1 digit
+    where
+        sensorData :: Parsec String () Data
+        sensorData = do
+            _ <- string "Sensor at x="
+            a <- parseInt
+            _ <- string ", y="
+            b <- parseInt
+            _ <- string ": closest beacon is at x="
+            c <- parseInt
+            _ <- string ", y="
+            d <- parseInt
+            return $ Data ((a,b),(c,d))
+        parseInt = (string "-" >> parseInt >>= (\s -> return $ (-1) * s) ) <|> (read <$> many1 digit)
