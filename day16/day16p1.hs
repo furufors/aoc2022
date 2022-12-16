@@ -7,7 +7,7 @@ import Data.Maybe
 import Data.List
 import Debug.Trace
 data Valve = Valve (String,Int,[String]) deriving (Show, Eq)
-data Link = Link (String,Int,Int,String) deriving (Show, Eq) -- (Start,Flow,Dist,End)
+data Link = Link (String,Int,Int,Int,String) deriving (Show, Eq) -- (Start,Flow,EFlow,Dist,End)
 
 toLinks :: [Valve] -> [Link]
 toLinks all = filter (remzero) $ toLinks' all
@@ -16,8 +16,8 @@ toLinks all = filter (remzero) $ toLinks' all
         toLinks' (v:vs) = (concat . map (shortestPath v all) $ filter (not . sameName v) nonZeros) ++ toLinks' vs
         toLinks' [] = []
 
-remzero (Link ("AA",_,_,_)) = True
-remzero (Link (_,0,_,_)) = False
+remzero (Link ("AA",_,_,_,_)) = True
+remzero (Link (_,0,_,_,_)) = False
 remzero a = True
 
 shortestPath :: Valve -> [Valve] -> Valve -> [Link]
@@ -31,7 +31,7 @@ shortestPath (Valve (s1,f1,ss1)) vs (Valve (s2,f2,ss2)) =
         getValve' [] pos = error $ "Couldn't find valve: " ++ pos ++ (show vs)
         getValve' (v@(Valve (es,f,ss)):rest) cs = if es == cs then v else getValve' rest cs
     in case sol of
-        Just (dist,steps) -> [Link (s1,f1,dist,s2)]
+        Just (dist,steps) -> [Link (s1,f1,f2,dist,s2)]
         Nothing -> []
 
 zeroFlow :: Valve -> Bool
@@ -41,26 +41,42 @@ sameName :: Valve -> Valve -> Bool
 sameName (Valve (a,_,_)) (Valve (b,_,_)) = a == b
 
 main :: IO ()
-main = interact $ show . solve . toLinks . map parseValve . lines
+main = interact $ show . bruteforce . toLinks . map parseValve . lines
 
-solve :: [Link] -> Maybe (Int, [(Int, Int, Int, M.Map String Bool, String)])
+bruteforce :: [Link] -> Int
+bruteforce ls = trace (show names) $ maximum [run ("AA":order) | order <- permutations names]
+    where
+        names = filter (/="AA") . nub $ map name ls
+        name (Link (s,_,_,_,_)) = s
+        run :: [String] -> Int
+        run order = run' 30 order
+        run' i (a:b:rest) | i > 0 = case fromTo a b of
+            Just (Link (_,_,f,d,_)) -> let i' = i-d-1 in (max 0 i')*f + (run' i' (b:rest))
+            Nothing -> error $ a++b
+        run' _ _ = 0
+        fromTo a b = let fltd = filter (\(Link (f,_,_,_,t)) -> a == f && b ==t) ls
+                     in if length fltd > 0 then Just (head fltd) else Nothing
+
+{- solve :: [Link] -> Maybe (Int, [(Int, Int, Int, M.Map String Bool, String)])
 solve vs =
     let start = (30, 0, 0, setClosed vs,"AA")
         setClosed [                  ] = M.empty
         setClosed ((Link (s,_,_,_)):rest) = M.insert s False $ setClosed rest
     in dijkstra next cost end start
         where
+            --heur (i,f,d,_,_) = -
             next state = openValve state ++ moveDirectly state -- ++ wait state
             wait (i,f,d,valveStatus, pos) = [(i+1,f,d-f,valveStatus, pos)]
-            cost (i1,f1,d1,_,_) (i2,f2,d2,_,_) = let im = max 0 i2 in -1 * f2 * (i1-im) + 10000*(i1-im)
+            cost (i1,f1,d1,_,_) (i2,f2,d2,_,_) = -d2
             end (i,_,_,_,_) = i <= 0
-            openValve (i,f,d,valveStatus, pos) = if newFlow 0 0 pos == 0 || (fromJust $ M.lookup pos valveStatus) then [] else [(i-1, newFlow f i pos, d - f, M.insert pos True valveStatus, pos)]
-            moveDirectly (i,f,d,valveStatus,pos) = let next = nub $ filter (from pos) vs in map (\(Link (_,_,dist,s)) -> (i-dist, f, d-(f*dist), valveStatus,s)) $ next
+            openValve (i,f,d,valveStatus, pos) = if newFlow 0 0 pos == 0 || (fromJust $ M.lookup pos valveStatus) then [] else [(i-1, newFlow f i pos, d + ((newFlow 0 0 pos) * (i-1)), M.insert pos True valveStatus, pos)]
+            moveDirectly (i,f,d,valveStatus,pos) = let next = nub $ filter (\p -> isClosed valveStatus p && from pos p) vs in map (\(Link (_,_,dist,s)) -> (i-dist, f, d, valveStatus,s)) $ next
             from s l@(Link (a,_,_,_)) = s == a
             newFlow f i pos = let (Link (_,nf,_,_)) = getValve pos in f + nf
+            isClosed a (Link (b,_,_,_)) = not . fromJust $ M.lookup b a
             getValve pos = getValve' vs pos
-            getValve' [] _ = error "Couldn't find valve"
-            getValve' (v@(Link (es,f,dist,ss)):rest) cs = if es == cs then v else getValve' rest cs
+            getValve' [] cs = error $ "Couldn't find valve: " ++ cs ++ (show vs)
+            getValve' (v@(Link (es,f,dist,ss)):rest) cs = if es == cs then v else getValve' rest cs -}
 
 parseValve :: String -> Valve
 parseValve input = case parse (try valve) "parsein" input of
