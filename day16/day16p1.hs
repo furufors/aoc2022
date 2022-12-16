@@ -8,6 +8,13 @@ import Data.List
 import Debug.Trace
 data Valve = Valve (String,Int,[String]) deriving (Show, Eq)
 data Link = Link (String,Int,Int,Int,String) deriving (Show, Eq) -- (Start,Flow,EFlow,Dist,End)
+type Dist = M.Map String Int
+type Flow = M.Map String Int
+
+toMaps :: [Link] -> (Flow, Dist)
+toMaps ls = foldl (conv) (M.empty, M.empty) ls
+    where
+        conv (fm,dm) (Link (s,f,ef,d,e)) = (M.insert e ef fm, M.insert (s++e) d dm)
 
 toLinks :: [Valve] -> [Link]
 toLinks all = filter (remzero) $ toLinks' all
@@ -41,21 +48,22 @@ sameName :: Valve -> Valve -> Bool
 sameName (Valve (a,_,_)) (Valve (b,_,_)) = a == b
 
 main :: IO ()
-main = interact $ show . bruteforce . toLinks . map parseValve . lines
+main = interact $ show . bruteforce . toMaps . toLinks . map parseValve . lines
 
-bruteforce :: [Link] -> Int
-bruteforce ls = trace (show names) $ maximum [run ("AA":order) | order <- permutations names]
+bruteforce :: (Flow, Dist) -> Int
+bruteforce (flowMap, distMap) = trace (show names) $ maximum [run ("AA":order) | ns <- subsetLists, order <- permutations ns]
     where
-        names = filter (/="AA") . nub $ map name ls
-        name (Link (s,_,_,_,_)) = s
+        subsetLists = subsets 8 names
+        names = filter (/="AA") . nub $ M.keys flowMap
         run :: [String] -> Int
         run order = run' 30 order
-        run' i (a:b:rest) | i > 0 = case fromTo a b of
-            Just (Link (_,_,f,d,_)) -> let i' = i-d-1 in (max 0 i')*f + (run' i' (b:rest))
-            Nothing -> error $ a++b
+        run' i (a:b:rest) | i > 0 = case (M.lookup (a++b) distMap, M.lookup b flowMap) of
+            (Just d, Just f) -> let i' = i-d-1 in (max 0 i')*f + (run' i' (b:rest))
+            otherwise -> error $ a++b
         run' _ _ = 0
-        fromTo a b = let fltd = filter (\(Link (f,_,_,_,t)) -> a == f && b ==t) ls
-                     in if length fltd > 0 then Just (head fltd) else Nothing
+        subsets 0 _ = [[]]
+        subsets _ [] = []
+        subsets n (x : xs) = map (x :) (subsets (n - 1) xs) ++ subsets n xs
 
 {- solve :: [Link] -> Maybe (Int, [(Int, Int, Int, M.Map String Bool, String)])
 solve vs =
