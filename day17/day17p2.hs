@@ -57,15 +57,13 @@ jet JetRight cave rock offset = let rock' = if any last rock then rock else map 
 
 clash :: Cave -> Rock -> Int -> Bool
 clash cave rock offset =
-    let miny = max 0 (offset-(length rock -1))
-        maxy = min offset (length cave - 1)
-    in any id [
-        any id [ if rocky `elem` [0..(length rock - 1)]
-                 then cave!!y!!x && rock!!rocky!!x
-                 else False
-                | x <- [0..6] ]
-            | y <- [0..(length cave - 1)] -- To be optimized
-            , let rocky = y-offset ]
+    any id [
+            any id [ if rocky `elem` [0..(length rock - 1)]
+                     then cave!!y!!x && rock!!rocky!!x
+                     else False
+                   | x <- [0..6] ]
+           | y <- [0..(length cave - 1)] -- To be optimized
+           , let rocky = y-offset ]
 
 toChks :: Cave -> String
 toChks = show . md5 . C8.pack . draw

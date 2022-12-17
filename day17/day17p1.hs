@@ -7,7 +7,7 @@ type Rock = [[Bool]]
 data Jets = JetLeft | JetRight deriving (Show,Eq)
 
 main :: IO ()
-main = interact $ show . game . cycle . parse . head . lines
+main = interact $ show . game . cycle . map toJet . head . lines
 
 game :: [Jets] -> Int
 game jets = maxHeight . init . snd $ foldl fall startState rockList
@@ -51,64 +51,33 @@ jet JetRight cave rock offset = let rock' = if any last rock then rock else map 
 
 clash :: Cave -> Rock -> Int -> Bool
 clash cave rock offset =
-    let miny = max 0 (offset-(length rock -1))
-        maxy = min offset (length cave - 1)
-    in any id [
-        any id [ if rocky `elem` [0..(length rock - 1)]
-                 then cave!!y!!x && rock!!rocky!!x
-                 else False
-                | x <- [0..6]
-                ]
-            | y <- [0..(length cave - 1)] -- To be optimized
-            , let rocky = y-offset
-            ]
+    any id [
+            any id [ if rocky `elem` [0..(length rock - 1)]
+                     then cave!!y!!x && rock!!rocky!!x
+                     else False
+                   | x <- [0..6] ]
+           | y <- [0..(length cave - 1)] -- To be optimized
+           , let rocky = y-offset ]
 
 draw :: Cave -> String
 draw c = (intercalate "\n" $ map (map toC) c) ++ "\n-------------------------\n"
-    where
-        toC True = '#'
-        toC False = '.'
-parse :: String -> [Jets]
-parse = map toJet
-    where
-        toJet :: Char -> Jets
-        toJet '<' = JetLeft
-        toJet '>' = JetRight
-        toJet  x  = error $ "Cannot parse " ++ [x]
+toC True = '#'
+toC False = '.'
+
+toJet :: Char -> Jets
+toJet '<' = JetLeft
+toJet '>' = JetRight
+toJet  x  = error $ "Cannot parse " ++ [x]
 
 startState = (0,startCave)
-
-startCave :: Cave
 startCave = [take 7 $ repeat True]
-emptyRow :: [Bool]
 emptyRow = take 7 $ repeat False
 
 rocks :: [Rock]
-rocks =
-    let f = False
-        t = True
-    in  [
-            [
-                [f,f,t,t,t,t,f]
-            ],
-            [
-                [f,f,f,t,f,f,f],
-                [f,f,t,t,t,f,f],
-                [f,f,f,t,f,f,f]
-            ],
-            [
-                [f,f,f,f,t,f,f],
-                [f,f,f,f,t,f,f],
-                [f,f,t,t,t,f,f]
-            ],
-            [
-                [f,f,t,f,f,f,f],
-                [f,f,t,f,f,f,f],
-                [f,f,t,f,f,f,f],
-                [f,f,t,f,f,f,f]
-            ],
-            [
-                [f,f,t,t,f,f,f],
-                [f,f,t,t,f,f,f]
-            ]
-        ]
+rocks = let f = False
+            t = True
+        in  [[[f,f,t,t,t,t,f]]
+            ,[[f,f,f,t,f,f,f],[f,f,t,t,t,f,f],[f,f,f,t,f,f,f]]
+            ,[[f,f,f,f,t,f,f],[f,f,f,f,t,f,f],[f,f,t,t,t,f,f]]
+            ,[[f,f,t,f,f,f,f],[f,f,t,f,f,f,f],[f,f,t,f,f,f,f],[f,f,t,f,f,f,f]]
+            ,[[f,f,t,t,f,f,f],[f,f,t,t,f,f,f]]]
