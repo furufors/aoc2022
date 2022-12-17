@@ -1,30 +1,73 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
+import Data.List
+import Debug.Trace
 type Cave = [[Bool]]
 type Rock = [[Bool]]
 data Jets = JetLeft | JetRight deriving (Show,Eq)
 
 main :: IO ()
-main = interact $ show . game . parse . head . lines
+main = interact $ show . game . cycle . parse . head . lines
 
 game :: [Jets] -> Int
-game jets = maxHeight . snd $ foldl fall startState rockList
+game jets = maxHeight . init . snd $ foldl fall startState rockList
     where
-        rockList = reverse $ take 2022 $ cycle rocks
+        rockList = take 2022 $ cycle rocks
         maxHeight :: Cave -> Int
         maxHeight bs = length bs - length (takeWhile (all not) bs)
         fall :: (Int, Cave) -> Rock -> (Int, Cave)
-        fall (jp,cave) r = step jp (pad cave) rock 0
-        step jp cave rock offset = if atBottom cave rock offset
-                                   then (jp,cave)
-                                   else step (jp + 1) (jet (jets!!jp) rock) (offset + 1)
-        atBottom cave rock offset = any [any id [cave!!(y+offset)!!x && rock!!y!!x | x <- [0..6]] | y <- [0..(length rock - 1)]]
-        pad cave = let deltay = length cave - maxHeight cave - 3 in take (deltay) emptyRow ++ cave
+        fall (jp,cave) r = step jp (pad cave) r (1 - length r)
+        step :: Int -> Cave -> Rock -> Int -> (Int,Cave)
+        step jp cave rock offset =
+            let rock' = jet (jets!!jp) cave rock offset
+            in --trace (draw $ placeRock cave rock' offset) $
+                if atBottom cave rock' offset
+                then (jp+1, placeRock cave rock' offset)
+                else step (jp + 1) cave rock' (offset + 1)
+        atBottom :: Cave -> Rock -> Int -> Bool
+        atBottom c r o = clash c r (o + 1)
+        placeRock :: Cave -> Rock -> Int -> Cave
+        placeRock cave rock offset =
+            [   [ if rocky `elem` [0..(length rock -1)]
+                  then cave!!y!!x || rock!!rocky!!x
+                  else cave!!y!!x
+                | x <- [0..6]
+                ]
+            | y <- [0..(length cave - 1)]
+            , let rocky = y - offset
+            ]
+        pad :: Cave -> Cave
+        pad cave = let deltay = 4 - ((length cave) - (maxHeight cave))  in (take (deltay) $ repeat emptyRow) ++ cave
 
-jet :: Jets -> Rock -> Rock
-jet JetLeft  rock = if any head rock then rock else map (\r -> drop 1 r ++ [False]) rock
-jet JetRight rock = if any last rock then rock else map (\r -> [False] ++ take 6 r) rock
+jet :: Jets -> Cave -> Rock -> Int -> Rock
+jet JetLeft cave rock offset = let rock' = if any head rock then rock else map (\r -> drop 1 r ++ [False]) rock
+                               in if clash cave rock' offset
+                                  then rock
+                                  else rock'
+jet JetRight cave rock offset = let rock' = if any last rock then rock else map (\r -> [False] ++ take 6 r) rock
+                                in if clash cave rock' offset
+                                   then rock
+                                   else rock'
 
+clash :: Cave -> Rock -> Int -> Bool
+clash cave rock offset =
+    let miny = max 0 (offset-(length rock -1))
+        maxy = min offset (length cave - 1)
+    in any id [
+        any id [ if rocky `elem` [0..(length rock - 1)]
+                 then cave!!y!!x && rock!!rocky!!x
+                 else False
+                | x <- [0..6]
+                ]
+            | y <- [0..(length cave - 1)] -- To be optimized
+            , let rocky = y-offset
+            ]
+
+draw :: Cave -> String
+draw c = (intercalate "\n" $ map (map toC) c) ++ "\n-------------------------\n"
+    where
+        toC True = '#'
+        toC False = '.'
 parse :: String -> [Jets]
 parse = map toJet
     where
@@ -36,7 +79,8 @@ parse = map toJet
 startState = (0,startCave)
 
 startCave :: Cave
-startCave = take 3 $ repeat emptyRow
+startCave = [take 7 $ repeat True]
+emptyRow :: [Bool]
 emptyRow = take 7 $ repeat False
 
 rocks :: [Rock]
