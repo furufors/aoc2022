@@ -12,12 +12,12 @@ main :: IO ()
 main = timeIt $ interact $ show . compute . Set.fromList . parMap rpar parseRock . lines
 
 compute rocks =
-    let minx = Set.findMin (Set.map (\(x,_,_) -> x) rocks) - 1
-        miny = Set.findMin (Set.map (\(_,y,_) -> y) rocks) - 1
-        minz = Set.findMin (Set.map (\(_,_,z) -> z) rocks) - 1
-        maxx = Set.findMax (Set.map (\(x,_,_) -> x) rocks) + 1
-        maxy = Set.findMax (Set.map (\(_,y,_) -> y) rocks) + 1
-        maxz = Set.findMax (Set.map (\(_,_,z) -> z) rocks) + 1
+    let xs = Set.map (\(x,_,_) -> x) rocks
+        ys = Set.map (\(_,y,_) -> y) rocks
+        zs = Set.map (\(_,_,z) -> z) rocks
+        (minx,maxx) = (Set.findMin xs - 1, Set.findMax xs + 1)
+        (miny,maxy) = (Set.findMin ys - 1, Set.findMax ys + 1)
+        (minz,maxz) = (Set.findMin zs - 1, Set.findMax zs + 1)
         neighbours (x,y,z) = filter insideBounds [(x-1,y,z),(x+1,y,z),(x,y-1,z),(x,y+1,z),(x,y,z-1),(x,y,z+1)]
         insideBounds (x,y,z) = minx <= x && x <= maxx && miny <= y && y <= maxy && minz <= z && z <= maxz
         visit :: [Rock] -> Set Rock -> Int -> Int
