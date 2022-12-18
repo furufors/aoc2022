@@ -32,8 +32,7 @@ compute rocks =
     in roxette `par` minx `par` maxx `par` miny `par` maxy `par` minz `par`maxz `seq` visit [(minx,miny,minz)] (Set.singleton (minx,miny,minz)) 0
 
 parseRock :: String -> Rock
-parseRock input = case parse rock "parsein" input of
-    Left err -> error $ show err
-    Right a -> a
-
-rock = read <$> many1 digit >>= \x -> string "," >> read <$> many1 digit >>= \y -> string "," >>  read <$> many1 digit >>= \z -> return (x,y,z)
+parseRock input = let rock = read <$> many1 digit >>= \x -> string "," >> read <$> many1 digit >>= \y -> string "," >>  read <$> many1 digit >>= \z -> return (x,y,z)
+                  in case parse rock "parsein" input of
+                        Left err -> error $ show err
+                        Right a -> a
