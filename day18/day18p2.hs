@@ -3,10 +3,11 @@
 import Text.Parsec
 import Data.Set (Set)
 import qualified Data.Set as Set
+import System.TimeIt
 type Rock = (Int,Int,Int)
 
 main :: IO ()
-main = interact $ show . compute . map parseRock . lines
+main = timeIt $ interact $ show . compute . map parseRock . lines
 
 compute rocks =
     let minp = minimum (map (\(x,y,z) -> minimum [x,y,z]) rocks) - 1
