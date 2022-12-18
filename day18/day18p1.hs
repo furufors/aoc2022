@@ -7,12 +7,11 @@ main = interact $ show . countSides . map parseRock . lines
 
 countSides rocks = (6 * length rocks) - sum (adjacent rocks)
 adjacent [] = []
-adjacent ((x,y,z):rocks) = [if adjPair (abs (a-x)) (abs (b-y)) (abs (c-z)) == 1 then 2 else 0
-                 | (a,b,c) <- rocks ] ++ (adjacent rocks)
+adjacent ((x,y,z):rocks) = [adjPair (abs (a-x)) (abs (b-y)) (abs (c-z)) | (a,b,c) <- rocks ]  ++ adjacent rocks
 
-adjPair 1 0 0 = 1
-adjPair 0 1 0 = 1
-adjPair 0 0 1 = 1
+adjPair 1 0 0 = 2
+adjPair 0 1 0 = 2
+adjPair 0 0 1 = 2
 adjPair _ _ _ = 0
 
 parseRock :: String -> Rock

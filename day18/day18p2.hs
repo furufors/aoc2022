@@ -26,14 +26,8 @@ compute rocks =
     in visit [(minp,minp,minp)] (Set.singleton (minp,minp,minp)) 0
 
 parseRock :: String -> Rock
-parseRock input = case parse (try rock) "parsein" input of
+parseRock input = case parse rock "parsein" input of
     Left err -> error $ show err
     Right a -> a
 
-rock = do
-    x  <- read <$> many1 digit
-    _  <- string ","
-    y  <- read <$> many1 digit
-    _  <- string ","
-    z  <- read <$> many1 digit
-    return $ (x,y,z)
+rock = read <$> many1 digit >>= \x -> string "," >> read <$> many1 digit >>= \y -> string "," >>  read <$> many1 digit >>= \z -> return (x,y,z)
