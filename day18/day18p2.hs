@@ -11,13 +11,13 @@ main = interact $ show . compute . map parseRock . lines
 compute rocks =
     let minp = minimum (map (\(x,y,z) -> minimum [x,y,z]) rocks) - 1
         maxp = maximum (map (\(x,y,z) -> maximum [x,y,z]) rocks) + 1
-        neighbours (x,y,z) = Set.fromList $ filter insideBounds [(x-1,y,z),(x+1,y,z),(x,y-1,z),(x,y+1,z),(x,y,z-1),(x,y,z+1)]
+        neighbours (x,y,z) = filter insideBounds [(x-1,y,z),(x+1,y,z),(x,y-1,z),(x,y+1,z),(x,y,z-1),(x,y,z+1)]
         insideBounds (x,y,z) = all (\p -> minp <= p && p <= maxp) [x,y,z]
         visit :: [Rock] -> Set Rock -> Int -> Int
         visit [] visited sideSeen = sideSeen
         visit (n:ns) visited sideSeen =
-            let newNeighbours = neighbours n Set.\\ visited
-                (ns', sideSeen', visited') = foldl update (ns,sideSeen,visited) (Set.toList newNeighbours)
+            let newNeighbours = (Set.fromList $ neighbours n) Set.\\ visited
+                (ns', sideSeen', visited') = foldl update (ns,sideSeen,visited) newNeighbours
                 update (ns, sideSeen, visited) new =
                     if new `elem` rocks
                     then (ns, sideSeen + 1, visited)
