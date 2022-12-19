@@ -10,15 +10,15 @@ type RunState = (Inventory {- Resources -}, Inventory {- Robots -})
 type BluePrint = (Int {- Id -}, Inventory {- OreRobot-}, Inventory {- ClayRobot-}, Inventory {- ObsidianRobot-}, Inventory {- GeodeRobot-})
 
 main :: IO ()
-main = timeIt $ interact $ show . foldl1 (*) . parMap rpar run . map parseBluePrint . take 3 . lines
+main = timeIt $ interact $ show . foldl1 (*) . parMap rpar (run . parseBluePrint) . take 3 . lines
 
 run :: BluePrint -> Int
-run bp@(i,orePrice, claPrice, obsPrice, geoPrice) =
-    let step :: Int -> BluePrint -> [RunState] -> Int
-        step n bp ss =
+run (i,orePrice, claPrice, obsPrice, geoPrice) =
+    let step :: Int -> [RunState] -> Int
+        step n ss =
             if n == 0
             then (maximum $ map (geo . fst) ss)
-            else step (n-1) bp . prune . reverse . prune $ [ next | next <- concat (parMap rpar nextStates ss)]
+            else step (n-1) . prune . reverse . prune $ [ next | next <- concat (parMap rpar nextStates ss)]
         maxNecessaryOre = maximum (map ore [orePrice,claPrice,obsPrice, geoPrice])
         maxNecessaryCla = cla obsPrice
         maxNecessaryObs = obs geoPrice
@@ -40,7 +40,7 @@ run bp@(i,orePrice, claPrice, obsPrice, geoPrice) =
             else if and [oreCond, claCond, obsCond]
                     then buyOreRobot ++ buyClaRobot ++ buyObsRobot
                     else buyingStates ++ bide
-    in step 32 bp [((0,0,0,0),(1,0,0,0))]
+    in step 32 [((0,0,0,0),(1,0,0,0))]
 
 ore (a,_,_,_) = a
 cla (_,b,_,_) = b
@@ -49,10 +49,8 @@ geo (_,_,_,d) = d
 
 prune :: [RunState] -> [RunState]
 prune []     = []
-prune (a:as) = a:prune (filter (not . \a' -> a' `bothWorse` a) as)
-    where
-        bothWorse (resourcesA,robotsA) (resourcesB,robotsB) =
-            resourcesA `worse` resourcesB && robotsA `worse` robotsB
+prune (a:as) = let bothWorse (resA,robA) (resB,robB) = resA `worse` resB && robA `worse` robB
+               in a:prune (filter (not . \a' -> a' `bothWorse` a) as)
 
 worse :: Inventory -> Inventory -> Bool
 (a,b,c,d) `worse` (e,f,g,h) = a <= e && b <= f && c <= g && d <= h
