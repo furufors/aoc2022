@@ -66,9 +66,6 @@ plus :: Inventory -> Inventory -> Inventory
 allowed :: Inventory -> Bool
 allowed (a,b,c,d) = a >= 0 && b >= 0 && c >= 0 && d >= 0
 
-multiple :: Int -> Inventory -> Inventory
-multiple x (a,b,c,d) = (x*a,x*b,x*c,x*d)
-
 parseBluePrint :: String -> BluePrint
 parseBluePrint input = case parse bluePrint "parsein" input of
     Left err -> error $ show err
