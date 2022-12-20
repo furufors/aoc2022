@@ -18,8 +18,8 @@ run ps =
         align xs = xs
 
         step :: CircularList -> Int -> CircularList
-        step cl pos =
-            let (i,e) = case findIndexL ((==pos) . fst) cl of
+        step cl p =
+            let (i,e) = case findIndexL ((==p) . fst) cl of
                     Just i -> (i, index cl i)
                     Nothing -> error $ "Couldn't find elem with index: " ++ show i
                 i' = (i + (snd e)) `mod` (len - 1)
