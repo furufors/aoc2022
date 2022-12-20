@@ -22,7 +22,7 @@ run ps =
             let (i,e) = case findIndexL ((==pos) . fst) cl of
                     Just i -> (i, index cl i)
                     Nothing -> error $ "Couldn't find elem with index: " ++ show i
-                newIndex = (i + (snd e)) `mod` (len - 1)
-                (left, right) = Seq.splitAt newIndex $ Seq.deleteAt i cl
+                i' = (i + (snd e)) `mod` (len - 1)
+                (left, right) = Seq.splitAt i' $ Seq.deleteAt i cl
             in (left |> e )>< right
     in sum . map (\i -> ps'!!(i `mod` len)) $ [1000,2000,3000]
