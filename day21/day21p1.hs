@@ -8,7 +8,6 @@ type JustMonkey = String
 type Val = Int
 data Operation = Mul | Add | Sub | Div deriving (Show)
 type MonkeyVal = M.Map JustMonkey Val
---type MonkeyAction = M.Map JustMonkey (Operation, JustMonkey, JustMonkey)
 data Action = Value Val JustMonkey | Action JustMonkey Operation JustMonkey JustMonkey deriving (Show)
 
 main :: IO ()
