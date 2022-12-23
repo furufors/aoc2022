@@ -22,7 +22,7 @@ solve :: (Map, Key) -> Int
 solve (m,k) =
     let startx = fromJust $ findIndex (==Floor) (m!!0)
         start = (R, (startx,0))
-        gs = (length $ filter (/= Empty) (m!!0)) `div` 2
+        gs = length $ filter (/= Empty) (m!!0)
         step :: Pos -> Inst -> Pos
         step (d,p) (Rotation r) = (rotate r d, p)
         step (d,p) (Steps n) = let (p',d') = walk n p d in (d', p')
@@ -31,7 +31,7 @@ solve (m,k) =
         testStep (x,y) d =
             let x' = x + xf d
                 y' = y + yf d
-            in if x' < 0 || x' >= 3*gs || y' < 0 || y' >= 4*gs
+            in if x' < 0 || x' >= 4*gs || y' < 0 || y' >= 3*gs
                then changeFace (x,y) d
                else case m!!y'!!x' of
                         Empty -> changeFace (x,y) d
@@ -41,33 +41,31 @@ solve (m,k) =
             Empty -> error "Attempting to move into the void!"
             Wall  -> True
             Floor -> False
-        face (x,y) = case (x `div` gs, y `div` gs) of
-            (1,0) -> 1
-            (2,0) -> 2
+        face (x,y) = trace (show (x,y)) $ case (x `div` gs, y `div` gs) of
+            (2,0) -> 1
+            (0,1) -> 2
             (1,1) -> 3
-            (1,2) -> 4
-            (0,2) -> 5
-            (0,3) -> 6
+            (2,1) -> 4
+            (2,2) -> 5
+            (3,2) -> 6
         changeFace (x,y) d =
             let xm = x `mod` gs
                 ym = y `mod` gs
                 (p',d') = case (face (x,y), d) of
-                    (1,U) -> ((0,         3*gs+xm),R)  --    11112222
-                    (1,L) -> ((0,       3*gs-1-ym),R)  --    11112222
-                    (2,U) -> ((xm,         4*gs-1),U)  --    11112222
-                    (2,R) -> ((2*gs-1,  3*gs-1-ym),L)  --    11112222
-                    (2,D) -> ((2*gs-1,      gs+xm),L)  --    3333
-                    (3,L) -> ((ym,           2*gs),D)  --    3333
-                    (3,R) -> ((2*gs+ym,      gs-1),U)  --    3333
-                    (4,D) -> ((gs-1,      3*gs+xm),L)  --    3333
-                    (4,R) -> ((3*gs-1,    gs-1-ym),L)  --55554444
-                    (5,U) -> ((gs,          gs+xm),R)  --55554444 153203
-                    (5,L) -> ((gs,        gs-1-ym),R)  --55554444
-                    (6,L) -> ((gs+ym,           0),D)  --55554444
-                    (6,D) -> ((2*gs+xm,         0),D)  --6666
-                    (6,R) -> ((gs+ym,      3*gs-1),U)  --6666
-                                                       --6666
-                                                       --6666
+                    (1,U) -> ((gs-1-xm,        gs),D)  --         1111
+                    (1,L) -> ((gs + ym,        gs),D)  --         1111
+                    (1,R) -> ((4*gs-1,  3*gs-1-ym),L)  --         1111
+                    (2,U) -> ((3*gs-1-xm,       0),D)  --         1111
+                    (2,L) -> ((4*gs-1-ym,  3*gs-1),U)  -- 222233334444
+                    (2,D) -> ((3*gs-1-xm,  3*gs-1),U)  -- 222233334444
+                    (3,U) -> ((2*gs,           xm),R)  -- 222233334444
+                    (3,D) -> ((2*gs,    3*gs-1-xm),R)  -- 222233334444
+                    (4,R) -> ((4*gs-1-ym,    2*gs),D)  --         55556666
+                    (5,L) -> ((2*gs-1-ym,  2*gs-1),U)  --         55556666
+                    (5,D) -> ((gs-1-xm,    2*gs-1),U)  --         55556666
+                    (6,U) -> ((3*gs-1,  2*gs-1-xm),L)  --         55556666
+                    (6,D) -> ((0,       2*gs-1-xm),R)
+                    (6,R) -> ((3*gs-1,    gs-1-ym),L)
             in if isWall p' then ((x,y),d) else (p', d')
         (d,(x,y)) = foldl step start k
     in (y+1)*1000 + (x+1) * 4 + toInt d
