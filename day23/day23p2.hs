@@ -1,12 +1,9 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
---import Data.Set (Set)
---import qualified Data.Set as S
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.List
-import Debug.Trace
 
 data Status = Free | Taken deriving (Show, Eq)
 data NESW = N | E | S | W deriving (Show, Eq, Ord)

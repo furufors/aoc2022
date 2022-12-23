@@ -1,7 +1,5 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
---import Data.Set (Set)
---import qualified Data.Set as S
 import Data.Map (Map)
 import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
@@ -99,4 +97,4 @@ containingBox m = let elfs = elfPos m
                       minx = minimum $ map fst elfs
                       maxy = maximum $ map snd elfs
                       miny = minimum $ map snd elfs
-                  in trace (show elfCount) $ (maxx - minx + 1) * (maxy - miny + 1) - elfCount
+                  in (maxx - minx + 1) * (maxy - miny + 1) - elfCount
