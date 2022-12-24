@@ -5,9 +5,7 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe)
 import Data.List
 import Debug.Trace
-
 data Status = Free | Taken deriving (Show, Eq)
-data NESW = N | E | S | W deriving (Show, Eq, Ord)
 type Point = (Int, Int)
 data Elf = Elf (Point, [Point]) deriving (Show, Eq, Ord)
 type Field = Map Point Status
