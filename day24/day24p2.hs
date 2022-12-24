@@ -6,12 +6,23 @@ import Data.List
 import Control.Parallel
 import Control.Parallel.Strategies
 import Debug.Trace
+import Data.Time.Clock
+import Text.Printf (printf)
 type Pos = (Int, Int)
 data Blizzard = U Pos | L Pos | D Pos | R Pos deriving (Show, Eq, Ord)
 type GamePlan = Set Pos
 
+timeIt :: IO a -> IO a
+timeIt ioa = do
+    t1 <- getCurrentTime
+    a <- ioa
+    t2 <- getCurrentTime
+    let t = diffUTCTime t2 t1
+    putStrLn ("\n" ++ show t)
+    return a
+
 main :: IO ()
-main = interact $ show . run . parse . lines
+main = timeIt $ interact $ show . run . parse . lines
 
 parse :: [String] -> (Int, Int, [Blizzard])
 parse ss = (length (ss!!0) - 2 , length ss - 2, bs)
@@ -36,17 +47,19 @@ run (w, h, bs) =
                 move (L (x,y)) = L ((x-1) `mod` w, y)
                 move (D (x,y)) = D (x, (y+1) `mod` h)
                 move (R (x,y)) = R ((x+1) `mod` w, y)
-        insertBlizzard s (U p) = S.insert p s
-        insertBlizzard s (L p) = S.insert p s
-        insertBlizzard s (D p) = S.insert p s
-        insertBlizzard s (R p) = S.insert p s
+        memoizedGp = (map gamePlan [0..] !!)
+            where
+                gamePlan n = foldl insertBlizzard S.empty (S.elems $ memoizedBs n)
+                insertBlizzard s (U p) = S.insert p s
+                insertBlizzard s (L p) = S.insert p s
+                insertBlizzard s (D p) = S.insert p s
+                insertBlizzard s (R p) = S.insert p s
         goal = (w-1,h)
         start = (0,-1)
         rounds s g i ps =
-            let gp = foldl insertBlizzard S.empty (S.elems $ memoizedBs (i+1))
-                step :: Pos -> [Pos]
+            let step :: Pos -> [Pos]
                 step (x,y) =
-                    concat [ if S.member (a,b) gp  then [] else [(a,b)]
+                    concat [ if S.member (a,b) (memoizedGp (i + 1))  then [] else [(a,b)]
                            | (dx,dy) <- [(1,0),(0,1),(-1,0),(0,-1),(0,0)]
                            , let a = x + dx, let b = y + dy
                            , (0 <= a && a < w && 0 <= b && b < h) || (a,b) == s || (a,b) == g
@@ -60,4 +73,4 @@ run (w, h, bs) =
         minutesSg = rounds start goal 0 [start]
         minutesGs = rounds goal start (minutesSg-1) [goal]
         minutesSg2 = rounds start goal (minutesGs-1) [start]
-    in trace (show (minutesSg-0) ++ " + " ++ show (minutesGs - minutesSg) ++ " + " ++ show (minutesSg2 - minutesGs)) $ minutesSg2
+    in memoizedGp 720 `par` trace (show (minutesSg-0) ++ " + " ++ show (minutesGs - minutesSg) ++ " + " ++ show (minutesSg2 - minutesGs)) $ minutesSg2
