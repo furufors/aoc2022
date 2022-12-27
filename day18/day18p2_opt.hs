@@ -2,11 +2,21 @@
 -- stack --resolver lts-18.18 script
 import Text.Parsec
 import Data.Set (Set)
+import Data.List
 import Control.Parallel
 import Control.Parallel.Strategies
 import qualified Data.Set as Set
-import System.TimeIt
+import Data.Time.Clock
 type Rock = (Int,Int,Int)
+
+timeIt :: IO a -> IO a
+timeIt ioa = do
+    t1 <- getCurrentTime
+    a <- ioa
+    t2 <- getCurrentTime
+    let t = diffUTCTime t2 t1
+    putStrLn ("\n" ++ show t)
+    return a
 
 main :: IO ()
 main = timeIt $ interact $ show . compute . parMap rpar parseRock . lines
@@ -21,14 +31,13 @@ compute rocks =
         insideBounds (x,y,z) = minx <= x && x <= maxx && miny <= y && y <= maxy && minz <= z && z <= maxz
         visit :: [Rock] -> Set Rock -> Int -> Int
         visit [] visited sideSeen = sideSeen
-        visit (n:ns) visited sideSeen =
-            let newNeighbours = Set.toList $ (Set.fromList $ neighbours n) Set.\\ visited
-                updates = parMap rpar update newNeighbours
-                newNodes = concat $ map fst updates
+        visit ns visited sideSeen =
+            let updates = concat . parMap rpar (\n -> map update $ Set.toList $ (Set.fromList $ neighbours n) Set.\\ visited) $ ns
+                newNodes = nub . concat $ map fst updates
                 newSides = sum $ map snd updates
                 update new = if Set.member new roxette then ([], 1) else ([new],0)
                 visited' = Set.union (Set.fromList newNodes) visited
-            in newNeighbours `seq` updates `seq` ((newNodes `seq` visited') `par` newSides) `seq` visit (newNodes ++ ns) visited' (sideSeen + newSides)
+            in updates `seq` ((newNodes `seq` visited') `par` newSides) `seq` visit (newNodes) visited' (sideSeen + newSides)
     in roxette `par` minx `par` maxx `par` miny `par` maxy `par` minz `par`maxz `seq` visit [(minx,miny,minz)] (Set.singleton (minx,miny,minz)) 0
 
 parseRock :: String -> Rock

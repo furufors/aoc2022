@@ -1,10 +1,12 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
+{-# LANGUAGE BangPatterns #-}
 import Text.Parsec
 import Algorithm.Search
+import Control.DeepSeq
 import Control.Parallel
 import Control.Parallel.Strategies
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Data.Maybe
 import Data.List
 import Data.Time.Clock
@@ -29,10 +31,10 @@ timeIt ioa = do
     return a
 
 main :: IO ()
-main = timeIt $ interact $ show . bruteforce . toMaps . toLinks . parMap rpar parseValve . lines
+main = timeIt $ interact $ show . bruteforce . toMaps . toLinks . force . parMap rpar parseValve . lines
 
 toMaps :: [Link] -> (Flow, Dist)
-toMaps ls = foldl conv (M.empty, M.empty) ls
+toMaps ls = force $ foldl' conv (M.empty, M.empty) ls
     where
         conv (fm,dm) (s,f,ef,d,e) = (M.insert e ef fm, M.insert (s++e) d dm)
 
@@ -40,7 +42,7 @@ toLinks :: [Valve] -> [Link]
 toLinks all = filter (remzero) $ toLinks' all
     where
         nonZeros = filter (not . zeroFlow) all
-        toLinks' (v:vs) = (concat . parMap rpar (shortestPath v all) $ filter (not . sameName v) nonZeros) ++ toLinks' vs
+        toLinks' (v:vs) = (force . concat . parMap rpar (shortestPath v all) $ filter (not . sameName v) nonZeros) ++ toLinks' vs
         toLinks' [] = []
         zeroFlow :: Valve -> Bool
         zeroFlow (_,i,_) = i == 0
@@ -72,7 +74,7 @@ bruteforce (flowMap, distMap) =
         step 0 _ = 0
         step n (i,s) =
             let nexts = (names \\ s)
-                runs = parMap rpar (\next -> (run i (last s) next,(s ++ [next]))) nexts
+                !runs = parMap rpar (\next -> (run i (last s) next,(s ++ [next]))) nexts
             in if null nexts
                then 0
                else maximum $ parMap rpar (\((flow, i'), path) -> flow + step (n-1) (i', path)) $ runs

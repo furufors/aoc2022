@@ -1,6 +1,7 @@
 #!/usr/bin/env stack
 -- stack --resolver lts-18.18 script
 {-# LANGUAGE BangPatterns #-}
+import Control.DeepSeq
 import Data.List
 import Terminal.Game
 import Data.Set (Set)
@@ -12,11 +13,14 @@ main :: IO ()
 main = do
      inp <- getContents
      let insts = concat . map parse . lines $ inp
-     let pos = follow (0,0) (0,0) [] insts
-     let !states = scanl (flip S.insert) S.empty pos
+     let pos = force $ follow (0,0) (0,0) [] insts
+     let states = scanl (flip S.insert) S.empty pos
      playGame Game { gTPS = 10
-                   , gInitState = 1
-                   , gLogicFunction = \g s e -> s + 1
+                   , gInitState = states `deepseq` 1
+                   , gLogicFunction = \g s e -> case e of
+                         Tick -> s + 1
+                         (KeyPress ' ') -> error "Quit game"
+                         (KeyPress _) -> s
                    , gDrawFunction = \g s -> blankPlaneFull g & (0, 0) % disp (states!!(s+3),pos!!s)
                    , gQuitFunction = \s -> s == length insts - 3
                    }
@@ -29,8 +33,8 @@ disp (ps,focus) =
          xmax = x+40
          ymin = y-20
          ymax = y+20
-         psfil = S.filter (\(x,y) -> xmin <= x && x <= xmax && ymin <= y && y <= ymax) ps
-         str = intercalate "\n" $ [ [ if S.member (a,b) psfil then '#' else ' ' | a <- [xmin..xmax]] | b <- [ymin..ymax] ]
+         !psfil = S.filter (\(x,y) -> xmin <= x && x <= xmax && ymin <= y && y <= ymax) ps
+         !str = intercalate "\n" $ [ [ if S.member (a,b) psfil then '#' else ' ' | a <- [xmin..xmax]] | b <- [ymin..ymax] ]
      in textBox (xmax-xmin+1) (ymax-ymin+1) str
 
 parse :: String -> [Instruction]
