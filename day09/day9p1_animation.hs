@@ -4,8 +4,13 @@
 import Control.DeepSeq
 import Data.List
 import Terminal.Game
+import Control.Parallel
+import Control.Parallel.Strategies
 import Data.Set (Set)
 import qualified Data.Set as S
+import Data.HashMap (Map)
+import qualified Data.HashMap as M
+type GamePlan = Map Pos Int
 data Instruction = R | U | D | L deriving (Eq, Show, Ord)
 type Pos = (Int,Int)
 
@@ -13,28 +18,37 @@ main :: IO ()
 main = do
      inp <- getContents
      let insts = concat . map parse . lines $ inp
-     let pos = force $ follow (0,0) (0,0) [] insts
-     let states = scanl (flip S.insert) S.empty pos
+     let pos = force $ zip [0..] (follow (0,0) (0,0) [] insts)
+     let states = force $ foldl' insertPos M.empty pos
      playGame Game { gTPS = 10
-                   , gInitState = states `deepseq` 1
+                   , gInitState = 1
                    , gLogicFunction = \g s e -> case e of
                          Tick -> s + 1
                          (KeyPress ' ') -> error "Quit game"
                          (KeyPress _) -> s
-                   , gDrawFunction = \g s -> blankPlaneFull g & (0, 0) % disp (states!!(s+3),pos!!s)
+                   , gDrawFunction = \g s -> blankPlaneFull g & (0, 0) % disp (states, s, snd (pos!!s))
                    , gQuitFunction = \s -> s == length insts - 3
                    }
      return ()
 
-disp :: (Set Pos, Pos) -> Plane
-disp (ps,focus) =
+insertPos :: GamePlan -> (Int,Pos) -> GamePlan
+insertPos gp (i,p) = case M.lookup p gp of
+     Just j -> if i < j then M.insert p i gp else gp
+     Nothing -> M.insert p i gp
+
+disp :: (GamePlan, Int, Pos) -> Plane
+disp (gp, i, focus) =
      let (x,y) = focus
+         checkPoint :: Pos -> Char
+         checkPoint p = case M.lookup p gp of
+               Nothing -> ' '
+               Just j -> if j <= i then '#' else ' '
          xmin = x-40
          xmax = x+40
          ymin = y-20
          ymax = y+20
-         !psfil = S.filter (\(x,y) -> xmin <= x && x <= xmax && ymin <= y && y <= ymax) ps
-         !str = intercalate "\n" $ [ [ if S.member (a,b) psfil then '#' else ' ' | a <- [xmin..xmax]] | b <- [ymin..ymax] ]
+         {-!psfil = S.filter (\(x,y) -> xmin <= x && x <= xmax && ymin <= y && y <= ymax) ps -}
+         !str = intercalate "\n" . parMap rpar (map checkPoint) $ [ [ (a, b) | a <- [xmin..xmax]] | b <- [ymin..ymax] ]
      in textBox (xmax-xmin+1) (ymax-ymin+1) str
 
 parse :: String -> [Instruction]
