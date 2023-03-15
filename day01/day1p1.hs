@@ -3,4 +3,4 @@
 import Data.List.Split
 
 main :: IO ()
-main = interact $ show . maximum . map sum . map (map (read :: String -> Int)) . map lines . splitOn "\n\n"
+main = interact $ show . maximum . map (sum . map read . lines) . splitOn "\n\n"
